@@ -1,0 +1,2152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Branch NPA Search &amp; CIF 360° Dashboard</title>
+
+  <!-- Inter Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- SheetJS (XLSX) CDN for 100% Client-Side Excel Parsing -->
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+          },
+          colors: {
+            navy: {
+              800: '#1E293B',
+              900: '#0F172A',
+              950: '#020617',
+            }
+          }
+        }
+      }
+    };
+  </script>
+
+  <style>
+    /* Base typography and crisp banking tabular numerals */
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background-color: #F1F5F9;
+      color: #0F172A;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .tabular-nums {
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Hide scrollbar for horizontal chip rails while preserving scroll */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    /* Smooth modal transitions */
+    @keyframes slideUp {
+      from { transform: translateY(20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    .animate-slide-up {
+      animation: slideUp 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    /* Custom subtle scrollbar for desktop modal */
+    .custom-scroll::-webkit-scrollbar {
+      width: 6px;
+    }
+    .custom-scroll::-webkit-scrollbar-track {
+      background: #F1F5F9;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background: #CBD5E1;
+      border-radius: 9999px;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased selection:bg-blue-100 selection:text-navy-900">
+
+  <!-- Hidden File Input for Excel/CSV Import -->
+  <input
+    type="file"
+    id="excelFileInput"
+    accept=".xlsx,.xls,.csv"
+    class="hidden"
+  />
+
+  <!-- ==================== TOP BANKING HEADER ==================== -->
+  <header class="bg-gradient-to-r from-navy-950 via-navy-900 to-navy-800 text-white shadow-lg border-b border-slate-800">
+    <div class="max-w-7xl mx-auto px-3 sm:px-6 py-3.5 sm:py-4">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+
+        <!-- Brand & Title -->
+        <div class="flex items-center justify-between gap-3">
+          <div class="flex items-center gap-3 min-w-0">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-inner shrink-0 border border-blue-400/30">
+              <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11m16-11v11M8 14v3m4-3v3m4-3v3" />
+              </svg>
+            </div>
+            <div class="min-w-0">
+              <h1 class="text-base sm:text-lg font-bold tracking-tight text-white truncate">
+                Branch NPA Search &amp; CIF 360°
+              </h1>
+              <div class="flex items-center gap-2 text-[11px] sm:text-xs text-slate-300 mt-0.5">
+                <span class="inline-flex items-center gap-1 text-emerald-400 font-medium">
+                  <svg class="w-3 h-3 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z" clip-rule="evenodd" />
+                  </svg>
+                  100% Offline Local Storage
+                </span>
+                <span class="hidden sm:inline text-slate-500">•</span>
+                <span class="hidden sm:inline text-slate-400">Zero Data Uploaded</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Action Controls -->
+        <div class="flex items-center flex-wrap gap-2">
+          <button
+            id="btnImportExcel"
+            type="button"
+            class="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white text-xs sm:text-sm font-semibold shadow-sm transition cursor-pointer"
+          >
+            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+            </svg>
+            <span>Import / Update Excel</span>
+          </button>
+
+          <button
+            id="btnLoadDemo"
+            type="button"
+            class="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-slate-200 border border-slate-700 text-xs sm:text-sm font-medium transition cursor-pointer"
+          >
+            <svg class="w-4 h-4 text-amber-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+            <span>Demo</span>
+          </button>
+
+          <button
+            id="btnClearData"
+            type="button"
+            title="Clear Local Data"
+            class="hidden inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-rose-950/60 hover:bg-rose-900/80 text-rose-300 border border-rose-800/60 text-xs sm:text-sm font-medium transition cursor-pointer"
+          >
+            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+            <span class="hidden sm:inline">Clear</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Active Dataset Metadata Banner -->
+      <div id="datasetMetaBar" class="hidden mt-3 pt-2.5 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-2 text-[11px] sm:text-xs text-slate-300">
+        <div class="flex items-center gap-2 min-w-0">
+          <span class="inline-flex h-2 w-2 rounded-full bg-emerald-400 shrink-0"></span>
+          <span id="metaFileName" class="font-semibold text-white truncate max-w-[220px] sm:max-w-md"></span>
+          <span id="metaDemoBadge" class="hidden px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[10px] font-bold uppercase tracking-wider">DEMO</span>
+        </div>
+        <div class="flex items-center gap-3 text-slate-400">
+          <span id="metaRecordCount" class="tabular-nums font-medium text-slate-200"></span>
+          <span>•</span>
+          <span id="metaUpdatedAt"></span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ==================== MAIN CONTENT WRAPPER ==================== -->
+  <main class="flex-1 w-full max-w-7xl mx-auto px-3 sm:px-6 py-4">
+
+    <!-- ==================== EMPTY / ONBOARDING STATE ==================== -->
+    <section id="emptyState" class="max-w-2xl mx-auto my-6 sm:my-12">
+      <div id="dropZone" class="bg-white rounded-2xl border-2 border-dashed border-slate-300 hover:border-blue-500 transition p-6 sm:p-10 text-center shadow-sm">
+        <div class="w-16 h-16 mx-auto rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mb-4 border border-blue-100">
+          <svg class="w-8 h-8" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+        </div>
+
+        <h2 class="text-xl sm:text-2xl font-bold text-navy-900">Upload Branch NPA Excel Sheet</h2>
+        <p class="text-sm text-slate-600 mt-2 max-w-md mx-auto leading-relaxed">
+          Import your Finacle NPA Excel file (<span class="font-semibold text-slate-800">.xlsx, .xls, or .csv</span>). It is parsed directly inside your mobile browser and saved locally via IndexedDB for instant offline access.
+        </p>
+
+        <div class="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
+          <button
+            id="btnEmptyUpload"
+            type="button"
+            class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-navy-900 hover:bg-navy-800 active:scale-[0.99] text-white text-sm font-semibold shadow-md transition cursor-pointer"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+            </svg>
+            Select NPA Excel File
+          </button>
+
+          <button
+            id="btnEmptyDemo"
+            type="button"
+            class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 text-sm font-semibold shadow-sm transition cursor-pointer"
+          >
+            <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+            Load Demo Sample Data
+          </button>
+        </div>
+
+        <!-- Privacy & Schema Highlights -->
+        <div class="mt-8 pt-6 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-3 gap-3 text-left">
+          <div class="p-3 rounded-xl bg-slate-50 border border-slate-200/70">
+            <div class="text-xs font-bold text-navy-900 flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+              Zero Cloud Upload
+            </div>
+            <p class="text-[11px] text-slate-600 mt-1">100% browser-side processing. Sensitive branch customer data never leaves your phone.</p>
+          </div>
+          <div class="p-3 rounded-xl bg-slate-50 border border-slate-200/70">
+            <div class="text-xs font-bold text-navy-900 flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+              CIF 360° Linking
+            </div>
+            <p class="text-[11px] text-slate-600 mt-1">Auto-links all accounts under the same CUST ID and computes consolidated exposure.</p>
+          </div>
+          <div class="p-3 rounded-xl bg-slate-50 border border-slate-200/70">
+            <div class="text-xs font-bold text-navy-900 flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-indigo-500"></span>
+              One-Time Import
+            </div>
+            <p class="text-[11px] text-slate-600 mt-1">Saved in IndexedDB. Upload once a month and search instantly even without internet.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== DASHBOARD WORKSPACE ==================== -->
+    <div id="dashboardWorkspace" class="hidden space-y-4">
+
+      <!-- 1. COMPACT BRANCH KPI STRIP -->
+      <section aria-label="Branch KPI Summary">
+        <div class="flex items-center justify-between mb-2 px-0.5">
+          <h2 class="text-xs font-bold uppercase tracking-wider text-slate-500">Portfolio Snapshot</h2>
+          <span id="kpiScopeBadge" class="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-200 text-slate-700">
+            Entire Branch
+          </span>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
+          <!-- Total Accounts -->
+          <div class="bg-white rounded-xl p-3 border border-slate-200/90 shadow-xs">
+            <div class="text-[11px] font-medium text-slate-500 uppercase tracking-wide">Total A/Cs</div>
+            <div id="kpiAccounts" class="text-lg sm:text-xl font-extrabold text-navy-900 tabular-nums mt-0.5">0</div>
+            <div id="kpiAccountsSub" class="text-[10px] text-slate-400 mt-0.5 truncate">Active NPA records</div>
+          </div>
+
+          <!-- Unique CIFs -->
+          <div class="bg-white rounded-xl p-3 border border-slate-200/90 shadow-xs">
+            <div class="text-[11px] font-medium text-slate-500 uppercase tracking-wide">Unique CIFs</div>
+            <div id="kpiCifs" class="text-lg sm:text-xl font-extrabold text-indigo-700 tabular-nums mt-0.5">0</div>
+            <div id="kpiCifsSub" class="text-[10px] text-slate-400 mt-0.5 truncate">Distinct borrowers</div>
+          </div>
+
+          <!-- Total O/S Balance -->
+          <div class="bg-white rounded-xl p-3 border border-slate-200/90 shadow-xs">
+            <div class="text-[11px] font-medium text-slate-500 uppercase tracking-wide">Total O/S Bal</div>
+            <div id="kpiOsBal" class="text-lg sm:text-xl font-extrabold text-rose-700 tabular-nums mt-0.5">₹0</div>
+            <div id="kpiOsBalFull" class="text-[10px] text-slate-500 tabular-nums mt-0.5 truncate">₹0.00</div>
+          </div>
+
+          <!-- Total OS-URI -->
+          <div class="bg-white rounded-xl p-3 border border-slate-200/90 shadow-xs">
+            <div class="text-[11px] font-medium text-slate-500 uppercase tracking-wide">Total OS-URI</div>
+            <div id="kpiOsUri" class="text-lg sm:text-xl font-extrabold text-navy-900 tabular-nums mt-0.5">₹0</div>
+            <div id="kpiOsUriFull" class="text-[10px] text-slate-500 tabular-nums mt-0.5 truncate">₹0.00</div>
+          </div>
+
+          <!-- Total Provision -->
+          <div class="bg-white rounded-xl p-3 border border-slate-200/90 shadow-xs">
+            <div class="text-[11px] font-medium text-slate-500 uppercase tracking-wide">Provision</div>
+            <div id="kpiProvision" class="text-lg sm:text-xl font-extrabold text-amber-700 tabular-nums mt-0.5">₹0</div>
+            <div id="kpiProvisionFull" class="text-[10px] text-slate-500 tabular-nums mt-0.5 truncate">₹0.00</div>
+          </div>
+
+          <!-- Total Compromise -->
+          <div class="bg-white rounded-xl p-3 border border-slate-200/90 shadow-xs">
+            <div class="text-[11px] font-medium text-slate-500 uppercase tracking-wide">Compromise</div>
+            <div id="kpiCompromise" class="text-lg sm:text-xl font-extrabold text-emerald-700 tabular-nums mt-0.5">₹0</div>
+            <div id="kpiCompromiseFull" class="text-[10px] text-slate-500 tabular-nums mt-0.5 truncate">₹0.00</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. STICKY OMNI-SEARCH & SMART FILTERS -->
+      <section class="sticky top-0 z-30 bg-[#F1F5F9]/95 backdrop-blur-md pt-2 pb-2.5 -mx-3 px-3 sm:-mx-6 sm:px-6 border-b border-slate-200/80">
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-3 space-y-2.5">
+
+          <!-- Search Input + Filter Toggle -->
+          <div class="flex items-center gap-2">
+            <div class="relative flex-1">
+              <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
+                <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                </svg>
+              </div>
+              <input
+                id="searchInput"
+                type="search"
+                autocomplete="off"
+                placeholder="Search Account No, CIF ID, Name, Village, or Mobile..."
+                class="w-full pl-10 pr-10 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-sm text-navy-900 placeholder:text-slate-400 focus:outline-none focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition"
+              />
+              <button
+                id="btnClearSearch"
+                type="button"
+                aria-label="Clear search"
+                class="hidden absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600 cursor-pointer"
+              >
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clip-rule="evenodd" />
+                </svg>
+              </button>
+            </div>
+
+            <button
+              id="btnToggleFilters"
+              type="button"
+              class="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs sm:text-sm font-semibold border border-slate-200 transition shrink-0 cursor-pointer"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+              </svg>
+              <span class="hidden sm:inline">Filters</span>
+              <span id="activeFilterCount" class="hidden px-1.5 py-0.5 text-[10px] rounded-full bg-blue-600 text-white font-bold">0</span>
+            </button>
+          </div>
+
+          <!-- Search Mode Chips -->
+          <div id="searchModeChips" class="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5">
+            <button data-mode="all" class="mode-chip px-3 py-1.5 rounded-lg text-xs font-semibold transition shrink-0 cursor-pointer bg-navy-900 text-white">All</button>
+            <button data-mode="account" class="mode-chip px-3 py-1.5 rounded-lg text-xs font-semibold transition shrink-0 cursor-pointer bg-slate-100 text-slate-600 hover:bg-slate-200">Account No</button>
+            <button data-mode="cif" class="mode-chip px-3 py-1.5 rounded-lg text-xs font-semibold transition shrink-0 cursor-pointer bg-slate-100 text-slate-600 hover:bg-slate-200">CIF ID</button>
+            <button data-mode="name" class="mode-chip px-3 py-1.5 rounded-lg text-xs font-semibold transition shrink-0 cursor-pointer bg-slate-100 text-slate-600 hover:bg-slate-200">Name</button>
+            <button data-mode="village" class="mode-chip px-3 py-1.5 rounded-lg text-xs font-semibold transition shrink-0 cursor-pointer bg-slate-100 text-slate-600 hover:bg-slate-200">Village</button>
+            <button data-mode="mobile" class="mode-chip px-3 py-1.5 rounded-lg text-xs font-semibold transition shrink-0 cursor-pointer bg-slate-100 text-slate-600 hover:bg-slate-200">Mobile</button>
+          </div>
+
+          <!-- Collapsible Smart Filter Row -->
+          <div id="filterPanel" class="hidden pt-2.5 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5">
+            <!-- Village Dropdown -->
+            <div>
+              <label for="filterVillage" class="block text-[11px] font-semibold text-slate-500 mb-1">Village / Area</label>
+              <select id="filterVillage" class="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-medium text-navy-900 focus:outline-none focus:border-blue-500">
+                <option value="">All Villages</option>
+              </select>
+            </div>
+
+            <!-- Asset Class Dropdown -->
+            <div>
+              <label for="filterAssetClass" class="block text-[11px] font-semibold text-slate-500 mb-1">Asset Class (NPA)</label>
+              <select id="filterAssetClass" class="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-medium text-navy-900 focus:outline-none focus:border-blue-500">
+                <option value="">All Asset Classes</option>
+                <option value="21">21 — Sub-Standard</option>
+                <option value="31">31 — Doubtful-1</option>
+                <option value="32">32 — Doubtful-2</option>
+                <option value="33">33 — Doubtful-3</option>
+                <option value="40">40 — Loss</option>
+              </select>
+            </div>
+
+            <!-- Scheme Code Dropdown -->
+            <div>
+              <label for="filterScheme" class="block text-[11px] font-semibold text-slate-500 mb-1">Scheme Code</label>
+              <select id="filterScheme" class="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-medium text-navy-900 focus:outline-none focus:border-blue-500">
+                <option value="">All Schemes</option>
+              </select>
+            </div>
+
+            <!-- Sort Selector -->
+            <div>
+              <label for="sortBy" class="block text-[11px] font-semibold text-slate-500 mb-1">Sort Results By</label>
+              <select id="sortBy" class="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-medium text-navy-900 focus:outline-none focus:border-blue-500">
+                <option value="os_desc">Highest O/S Balance</option>
+                <option value="comp_desc">Highest Compromise</option>
+                <option value="name_asc">Borrower Name (A–Z)</option>
+                <option value="village_asc">Village (A–Z)</option>
+                <option value="npa_oldest">Oldest NPA Date</option>
+              </select>
+            </div>
+
+            <!-- Reset Filters Button -->
+            <div class="flex items-end">
+              <button
+                id="btnResetFilters"
+                type="button"
+                class="w-full px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold border border-slate-200 transition cursor-pointer"
+              >
+                Reset All Filters
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. RESULT STATUS BAR & PAGINATED CARD LIST -->
+      <section aria-label="Search Results">
+        <div class="flex items-center justify-between mb-2.5 px-0.5 text-xs text-slate-600">
+          <div id="resultsCountText" class="font-medium">Showing 0 accounts</div>
+          <div class="text-[11px] text-slate-400">Tap any card for CIF 360° view</div>
+        </div>
+
+        <!-- Result Grid -->
+        <div id="resultsContainer" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+          <!-- Cards rendered via JS -->
+        </div>
+
+        <!-- No Matches Found State -->
+        <div id="noResultsState" class="hidden bg-white rounded-2xl border border-slate-200 p-10 text-center">
+          <div class="w-12 h-12 mx-auto rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mb-3">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+            </svg>
+          </div>
+          <h3 class="text-sm font-bold text-navy-900">No Matching NPA Accounts</h3>
+          <p class="text-xs text-slate-500 mt-1">Try changing the search mode, spelling, or resetting your active filters.</p>
+          <button id="btnNoResultsReset" type="button" class="mt-4 px-4 py-2 rounded-xl bg-navy-900 text-white text-xs font-semibold hover:bg-navy-800 transition cursor-pointer">
+            Clear Search &amp; Filters
+          </button>
+        </div>
+
+        <!-- Load More Button -->
+        <div id="loadMoreWrapper" class="hidden mt-5 text-center">
+          <button
+            id="btnLoadMore"
+            type="button"
+            class="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-white hover:bg-slate-50 active:bg-slate-100 text-navy-900 border border-slate-300 text-sm font-semibold shadow-xs transition cursor-pointer"
+          >
+            <span>Load More Accounts</span>
+            <span id="loadMoreRemaining" class="text-xs text-slate-500 font-normal"></span>
+          </button>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- ==================== FOOTER ==================== -->
+  <footer class="mt-auto py-4 px-4 text-center text-[11px] text-slate-500 border-t border-slate-200/80 bg-white/60">
+    <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-1.5">
+      <div class="inline-flex items-center gap-1.5 font-medium text-slate-600">
+        <svg class="w-3.5 h-3.5 text-emerald-600" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+        </svg>
+        <span>100% Offline Local Storage • Zero Data Uploaded</span>
+      </div>
+      <div>Branch NPA Search &amp; CIF 360° Dashboard • Client-Side Finacle Recovery Utility</div>
+    </div>
+  </footer>
+
+  <!-- ==================== ACCOUNT & CIF 360° DETAIL MODAL ==================== -->
+  <div
+    id="detailModal"
+    class="hidden fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-navy-950/70 backdrop-blur-xs sm:p-4"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="modalBorrowerName"
+  >
+    <div
+      id="detailModalCard"
+      class="animate-slide-up w-full sm:max-w-3xl h-[94vh] sm:h-auto sm:max-h-[90vh] bg-slate-50 rounded-t-3xl sm:rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-slate-200"
+    >
+      <!-- Modal Sticky Header -->
+      <div class="bg-white px-4 sm:px-6 py-4 border-b border-slate-200 shrink-0">
+        <div class="flex items-start justify-between gap-3">
+          <div class="min-w-0">
+            <div class="flex items-center flex-wrap gap-2">
+              <h2 id="modalBorrowerName" class="text-base sm:text-lg font-extrabold text-navy-900 leading-tight break-words">
+                Borrower Name
+              </h2>
+              <span id="modalAssetBadge"></span>
+            </div>
+
+            <div class="flex items-center flex-wrap gap-2 mt-1.5 text-xs text-slate-600">
+              <span id="modalVillage" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-medium">
+                Village
+              </span>
+              <span id="modalScheme" class="inline-flex items-center px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 font-semibold border border-blue-100">
+                SCHEME
+              </span>
+            </div>
+          </div>
+
+          <button
+            id="btnCloseModal"
+            type="button"
+            aria-label="Close detail view"
+            class="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 transition shrink-0 cursor-pointer"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <!-- Quick IDs (1-Tap Copy) + Call / WhatsApp Actions -->
+        <div class="mt-3 pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
+          <div class="flex flex-wrap items-center gap-2">
+            <!-- Copy Account No -->
+            <button
+              id="btnCopyAcct"
+              type="button"
+              class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-xs font-mono font-semibold text-navy-900 transition cursor-pointer"
+              title="Tap to copy Account Number"
+            >
+              <span class="text-slate-500 font-sans font-normal">A/C:</span>
+              <span id="modalAcctNo"></span>
+              <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+              </svg>
+            </button>
+
+            <!-- Copy CIF ID -->
+            <button
+              id="btnCopyCif"
+              type="button"
+              class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-xs font-mono font-semibold text-indigo-900 border border-indigo-100 transition cursor-pointer"
+              title="Tap to copy CIF ID"
+            >
+              <span class="text-indigo-500 font-sans font-normal">CIF:</span>
+              <span id="modalCifId"></span>
+              <svg class="w-3.5 h-3.5 text-indigo-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+              </svg>
+            </button>
+          </div>
+
+          <!-- Direct Contact Buttons -->
+          <div id="modalContactActions" class="flex items-center gap-2">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Scrollable Body -->
+      <div id="modalBodyScroll" class="flex-1 overflow-y-auto custom-scroll p-4 sm:p-6 space-y-5">
+
+        <!-- SECTION 1: CIF 360° CONSOLIDATED EXPOSURE CARD -->
+        <section class="rounded-2xl bg-gradient-to-br from-navy-950 via-navy-900 to-slate-800 text-white p-4 sm:p-5 shadow-md border border-slate-700/80">
+          <div class="flex items-center justify-between gap-2 pb-3 border-b border-slate-700/70">
+            <div>
+              <div class="text-[11px] font-bold uppercase tracking-widest text-blue-400">CIF 360° Consolidated Exposure</div>
+              <div class="text-xs text-slate-300 mt-0.5">Combined totals across all accounts under CIF <span id="cif360IdLabel" class="font-mono font-semibold text-white"></span></div>
+            </div>
+            <div class="text-right shrink-0">
+              <span id="cif360CountBadge" class="inline-flex items-center px-2.5 py-1 rounded-lg bg-blue-500/20 text-blue-300 border border-blue-400/30 text-xs font-bold tabular-nums">
+                1 A/C
+              </span>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-3.5">
+            <div class="bg-white/5 rounded-xl p-2.5 border border-white/10">
+              <div class="text-[10px] uppercase tracking-wider text-slate-400">CIF Total O/S Bal</div>
+              <div id="cif360OsBal" class="text-sm sm:text-base font-extrabold text-rose-300 tabular-nums mt-0.5">₹0.00</div>
+            </div>
+            <div class="bg-white/5 rounded-xl p-2.5 border border-white/10">
+              <div class="text-[10px] uppercase tracking-wider text-slate-400">CIF Total OS-URI</div>
+              <div id="cif360OsUri" class="text-sm sm:text-base font-extrabold text-white tabular-nums mt-0.5">₹0.00</div>
+            </div>
+            <div class="bg-white/5 rounded-xl p-2.5 border border-white/10">
+              <div class="text-[10px] uppercase tracking-wider text-slate-400">CIF Compromise</div>
+              <div id="cif360Compromise" class="text-sm sm:text-base font-extrabold text-emerald-300 tabular-nums mt-0.5">₹0.00</div>
+            </div>
+            <div class="bg-white/5 rounded-xl p-2.5 border border-white/10">
+              <div class="text-[10px] uppercase tracking-wider text-slate-400">CIF Sanctioned Limit</div>
+              <div id="cif360SanctLim" class="text-sm sm:text-base font-bold text-slate-100 tabular-nums mt-0.5">₹0.00</div>
+            </div>
+            <div class="bg-white/5 rounded-xl p-2.5 border border-white/10">
+              <div class="text-[10px] uppercase tracking-wider text-slate-400">CIF Total URI</div>
+              <div id="cif360Uri" class="text-sm sm:text-base font-bold text-amber-200 tabular-nums mt-0.5">₹0.00</div>
+            </div>
+            <div class="bg-white/5 rounded-xl p-2.5 border border-white/10">
+              <div class="text-[10px] uppercase tracking-wider text-slate-400">CIF Total Provision</div>
+              <div id="cif360Provision" class="text-sm sm:text-base font-bold text-slate-100 tabular-nums mt-0.5">₹0.00</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- SECTION 2: SELECTED ACCOUNT FULL DETAILS -->
+        <section class="space-y-3">
+          <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500 px-0.5">Selected Account Full Details</h3>
+
+          <!-- Financial Metrics -->
+          <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-xs">
+            <div class="text-xs font-bold text-navy-900 mb-3 flex items-center gap-1.5">
+              <span class="w-1.5 h-4 rounded-full bg-blue-600"></span>
+              Financial Metrics
+            </div>
+            <div id="detailFinancialGrid" class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              <!-- Populated dynamically -->
+            </div>
+          </div>
+
+          <!-- Facility, Borrower & Dates -->
+          <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-xs">
+            <div class="text-xs font-bold text-navy-900 mb-3 flex items-center gap-1.5">
+              <span class="w-1.5 h-4 rounded-full bg-indigo-600"></span>
+              Facility &amp; Account Profile
+            </div>
+            <div id="detailFacilityGrid" class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              <!-- Populated dynamically -->
+            </div>
+          </div>
+
+          <!-- NPA & Provisioning -->
+          <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-xs">
+            <div class="text-xs font-bold text-navy-900 mb-3 flex items-center gap-1.5">
+              <span class="w-1.5 h-4 rounded-full bg-rose-600"></span>
+              NPA Classification &amp; Aging
+            </div>
+            <div id="detailNpaGrid" class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              <!-- Populated dynamically -->
+            </div>
+          </div>
+        </section>
+
+        <!-- SECTION 3: ALL LINKED ACCOUNTS UNDER SAME CIF -->
+        <section class="space-y-2.5">
+          <div class="flex items-center justify-between px-0.5">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500">All Linked Accounts under Same CIF</h3>
+            <span id="linkedAccountsHint" class="text-[11px] text-slate-400">Tap any account to switch</span>
+          </div>
+          <div id="linkedAccountsList" class="space-y-2">
+            <!-- Populated dynamically -->
+          </div>
+        </section>
+      </div>
+
+      <!-- SECTION 4: MODAL STICKY FOOTER (COPY RECOVERY SUMMARY) -->
+      <div class="bg-white px-4 sm:px-6 py-3.5 border-t border-slate-200 shrink-0 flex items-center justify-between gap-3">
+        <button
+          id="btnCopySummary"
+          type="button"
+          class="flex-1 inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white text-sm font-bold shadow-sm transition cursor-pointer"
+        >
+          <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+          </svg>
+          <span>Copy Recovery Summary (WhatsApp Ready)</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== CUSTOM CONFIRMATION MODAL ==================== -->
+  <div id="confirmModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-navy-950/60 backdrop-blur-xs p-4" role="dialog" aria-modal="true">
+    <div class="animate-slide-up bg-white rounded-2xl max-w-sm w-full p-5 shadow-2xl border border-slate-200">
+      <div class="w-11 h-11 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mb-3">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
+      </div>
+      <h3 class="text-base font-bold text-navy-900">Clear Local NPA Data?</h3>
+      <p class="text-xs text-slate-600 mt-1.5 leading-relaxed">
+        This will permanently remove the saved NPA Excel dataset from this browser's IndexedDB storage. You can re-import your Excel file anytime.
+      </p>
+      <div class="mt-5 flex items-center justify-end gap-2">
+        <button id="btnCancelClear" type="button" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition cursor-pointer">
+          Cancel
+        </button>
+        <button id="btnConfirmClear" type="button" class="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold transition cursor-pointer">
+          Yes, Clear Data
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== LOADING OVERLAY ==================== -->
+  <div id="loadingOverlay" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-navy-950/60 backdrop-blur-xs p-4">
+    <div class="bg-white rounded-2xl px-6 py-5 shadow-xl flex items-center gap-3.5 border border-slate-200">
+      <svg class="animate-spin h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+      </svg>
+      <div>
+        <div id="loadingTitle" class="text-sm font-bold text-navy-900">Parsing Excel File...</div>
+        <div class="text-xs text-slate-500">Processing locally on your device</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== TOAST NOTIFICATION ==================== -->
+  <div
+    id="toast"
+    class="pointer-events-none fixed bottom-5 left-1/2 -translate-x-1/2 z-[60] opacity-0 translate-y-2 transition-all duration-200"
+  >
+    <div id="toastInner" class="px-4 py-2.5 rounded-xl bg-navy-900 text-white text-xs sm:text-sm font-semibold shadow-xl border border-slate-700 flex items-center gap-2 whitespace-nowrap">
+      <span id="toastMessage">Copied!</span>
+    </div>
+  </div>
+
+  <!-- ==================== APPLICATION JAVASCRIPT ==================== -->
+  <script>
+    (function () {
+      'use strict';
+
+      /* =====================================================================
+         1. CONSTANTS, ASSET CLASS MAP & APPLICATION STATE
+         ===================================================================== */
+      const DB_NAME = 'BranchNPADashboardDB';
+      const DB_VERSION = 1;
+      const STORE_NAME = 'datasets';
+      const DATA_KEY = 'current_npa_data';
+      const PAGE_SIZE = 50;
+
+      const ASSET_CLASS_MAP = {
+        '21': {
+          code: '21',
+          label: 'Sub-Standard',
+          short: '21 • Sub-Std',
+          badgeClass: 'bg-amber-100 text-amber-800 border border-amber-300',
+        },
+        '31': {
+          code: '31',
+          label: 'Doubtful-1',
+          short: '31 • D-1',
+          badgeClass: 'bg-orange-100 text-orange-800 border border-orange-300',
+        },
+        '32': {
+          code: '32',
+          label: 'Doubtful-2',
+          short: '32 • D-2',
+          badgeClass: 'bg-orange-200 text-orange-950 border border-orange-400',
+        },
+        '33': {
+          code: '33',
+          label: 'Doubtful-3',
+          short: '33 • D-3',
+          badgeClass: 'bg-red-100 text-red-800 border border-red-300',
+        },
+        '40': {
+          code: '40',
+          label: 'Loss',
+          short: '40 • Loss',
+          badgeClass: 'bg-rose-900 text-rose-50 border border-rose-950',
+        },
+      };
+
+      const state = {
+        records: [],          // Normalized NPA account records
+        cifMap: new Map(),    // Map<custId, AccountRecord[]> for O(1) CIF 360 lookup
+        meta: null,           // { fileName, uploadedAt, recordCount, isDemo }
+        filtered: [],         // Current filtered & sorted records
+        visibleCount: PAGE_SIZE,
+        searchQuery: '',
+        searchMode: 'all',    // all | account | cif | name | village | mobile
+        filterVillage: '',
+        filterAssetClass: '',
+        filterScheme: '',
+        sortBy: 'os_desc',
+        activeRecord: null,   // Currently open account in detail modal
+      };
+
+      /* =====================================================================
+         2. DOM REFERENCES
+         ===================================================================== */
+      const el = {
+        fileInput: document.getElementById('excelFileInput'),
+        btnImportExcel: document.getElementById('btnImportExcel'),
+        btnLoadDemo: document.getElementById('btnLoadDemo'),
+        btnClearData: document.getElementById('btnClearData'),
+        btnEmptyUpload: document.getElementById('btnEmptyUpload'),
+        btnEmptyDemo: document.getElementById('btnEmptyDemo'),
+        dropZone: document.getElementById('dropZone'),
+
+        datasetMetaBar: document.getElementById('datasetMetaBar'),
+        metaFileName: document.getElementById('metaFileName'),
+        metaDemoBadge: document.getElementById('metaDemoBadge'),
+        metaRecordCount: document.getElementById('metaRecordCount'),
+        metaUpdatedAt: document.getElementById('metaUpdatedAt'),
+
+        emptyState: document.getElementById('emptyState'),
+        dashboardWorkspace: document.getElementById('dashboardWorkspace'),
+
+        kpiScopeBadge: document.getElementById('kpiScopeBadge'),
+        kpiAccounts: document.getElementById('kpiAccounts'),
+        kpiCifs: document.getElementById('kpiCifs'),
+        kpiOsBal: document.getElementById('kpiOsBal'),
+        kpiOsBalFull: document.getElementById('kpiOsBalFull'),
+        kpiOsUri: document.getElementById('kpiOsUri'),
+        kpiOsUriFull: document.getElementById('kpiOsUriFull'),
+        kpiProvision: document.getElementById('kpiProvision'),
+        kpiProvisionFull: document.getElementById('kpiProvisionFull'),
+        kpiCompromise: document.getElementById('kpiCompromise'),
+        kpiCompromiseFull: document.getElementById('kpiCompromiseFull'),
+
+        searchInput: document.getElementById('searchInput'),
+        btnClearSearch: document.getElementById('btnClearSearch'),
+        btnToggleFilters: document.getElementById('btnToggleFilters'),
+        activeFilterCount: document.getElementById('activeFilterCount'),
+        searchModeChips: document.getElementById('searchModeChips'),
+        filterPanel: document.getElementById('filterPanel'),
+        filterVillage: document.getElementById('filterVillage'),
+        filterAssetClass: document.getElementById('filterAssetClass'),
+        filterScheme: document.getElementById('filterScheme'),
+        sortBy: document.getElementById('sortBy'),
+        btnResetFilters: document.getElementById('btnResetFilters'),
+
+        resultsCountText: document.getElementById('resultsCountText'),
+        resultsContainer: document.getElementById('resultsContainer'),
+        noResultsState: document.getElementById('noResultsState'),
+        btnNoResultsReset: document.getElementById('btnNoResultsReset'),
+        loadMoreWrapper: document.getElementById('loadMoreWrapper'),
+        btnLoadMore: document.getElementById('btnLoadMore'),
+        loadMoreRemaining: document.getElementById('loadMoreRemaining'),
+
+        detailModal: document.getElementById('detailModal'),
+        modalBodyScroll: document.getElementById('modalBodyScroll'),
+        btnCloseModal: document.getElementById('btnCloseModal'),
+        modalBorrowerName: document.getElementById('modalBorrowerName'),
+        modalAssetBadge: document.getElementById('modalAssetBadge'),
+        modalVillage: document.getElementById('modalVillage'),
+        modalScheme: document.getElementById('modalScheme'),
+        modalAcctNo: document.getElementById('modalAcctNo'),
+        modalCifId: document.getElementById('modalCifId'),
+        btnCopyAcct: document.getElementById('btnCopyAcct'),
+        btnCopyCif: document.getElementById('btnCopyCif'),
+        modalContactActions: document.getElementById('modalContactActions'),
+
+        cif360IdLabel: document.getElementById('cif360IdLabel'),
+        cif360CountBadge: document.getElementById('cif360CountBadge'),
+        cif360OsBal: document.getElementById('cif360OsBal'),
+        cif360OsUri: document.getElementById('cif360OsUri'),
+        cif360Compromise: document.getElementById('cif360Compromise'),
+        cif360SanctLim: document.getElementById('cif360SanctLim'),
+        cif360Uri: document.getElementById('cif360Uri'),
+        cif360Provision: document.getElementById('cif360Provision'),
+
+        detailFinancialGrid: document.getElementById('detailFinancialGrid'),
+        detailFacilityGrid: document.getElementById('detailFacilityGrid'),
+        detailNpaGrid: document.getElementById('detailNpaGrid'),
+        linkedAccountsList: document.getElementById('linkedAccountsList'),
+        btnCopySummary: document.getElementById('btnCopySummary'),
+
+        confirmModal: document.getElementById('confirmModal'),
+        btnCancelClear: document.getElementById('btnCancelClear'),
+        btnConfirmClear: document.getElementById('btnConfirmClear'),
+
+        loadingOverlay: document.getElementById('loadingOverlay'),
+        loadingTitle: document.getElementById('loadingTitle'),
+        toast: document.getElementById('toast'),
+        toastMessage: document.getElementById('toastMessage'),
+      };
+
+      /* =====================================================================
+         3. INDEXEDDB STORAGE LAYER (100% LOCAL & OFFLINE)
+         ===================================================================== */
+      function openDB() {
+        return new Promise((resolve, reject) => {
+          const req = indexedDB.open(DB_NAME, DB_VERSION);
+          req.onupgradeneeded = (e) => {
+            const db = e.target.result;
+            if (!db.objectStoreNames.contains(STORE_NAME)) {
+              db.createObjectStore(STORE_NAME);
+            }
+          };
+          req.onsuccess = () => resolve(req.result);
+          req.onerror = () => reject(req.error);
+        });
+      }
+
+      async function saveToIndexedDB(payload) {
+        const db = await openDB();
+        return new Promise((resolve, reject) => {
+          const tx = db.transaction(STORE_NAME, 'readwrite');
+          tx.objectStore(STORE_NAME).put(payload, DATA_KEY);
+          tx.oncomplete = () => resolve();
+          tx.onerror = () => reject(tx.error);
+        });
+      }
+
+      async function loadFromIndexedDB() {
+        const db = await openDB();
+        return new Promise((resolve, reject) => {
+          const tx = db.transaction(STORE_NAME, 'readonly');
+          const req = tx.objectStore(STORE_NAME).get(DATA_KEY);
+          req.onsuccess = () => resolve(req.result || null);
+          req.onerror = () => reject(req.error);
+        });
+      }
+
+      async function clearIndexedDB() {
+        const db = await openDB();
+        return new Promise((resolve, reject) => {
+          const tx = db.transaction(STORE_NAME, 'readwrite');
+          tx.objectStore(STORE_NAME).delete(DATA_KEY);
+          tx.oncomplete = () => resolve();
+          tx.onerror = () => reject(tx.error);
+        });
+      }
+
+      /* =====================================================================
+         4. FORMATTING & DATA NORMALIZATION HELPERS
+         ===================================================================== */
+      const inrFormatter = new Intl.NumberFormat('en-IN', {
+        style: 'currency',
+        currency: 'INR',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      });
+
+      const inrWholeFormatter = new Intl.NumberFormat('en-IN', {
+        style: 'currency',
+        currency: 'INR',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+      });
+
+      /**
+       * Format standard INR amount (non-signed or absolute)
+       */
+      function formatINR(num, showDecimals = true) {
+        const val = Number(num) || 0;
+        return showDecimals ? inrFormatter.format(val) : inrWholeFormatter.format(Math.round(val));
+      }
+
+      /**
+       * Format Finacle O/S Balance clearly with Dr/Cr indicator
+       * In Finacle exports, debit (outstanding loan) balances are negative (e.g., -124649.03).
+       */
+      function formatOsBal(num, includeTag = true) {
+        const val = Number(num) || 0;
+        const absFormatted = inrFormatter.format(Math.abs(val));
+        if (!includeTag) return absFormatted;
+        if (val < 0) return `${absFormatted} Dr`;
+        if (val > 0) return `${absFormatted} Cr`;
+        return absFormatted;
+      }
+
+      /**
+       * Compact Indian currency format (Cr / L / K) for KPI strip
+       */
+      function formatCompactINR(num) {
+        const abs = Math.abs(Number(num) || 0);
+        if (abs >= 1e7) return `₹${(abs / 1e7).toFixed(2)} Cr`;
+        if (abs >= 1e5) return `₹${(abs / 1e5).toFixed(2)} L`;
+        if (abs >= 1e3) return `₹${(abs / 1e3).toFixed(1)} K`;
+        return `₹${Math.round(abs).toLocaleString('en-IN')}`;
+      }
+
+      /**
+       * Safely convert large numeric IDs (like 15-digit Account Numbers or CIFs) to clean string without scientific notation
+       */
+      function cleanIdString(val) {
+        if (val === null || val === undefined || val === '') return '';
+        if (typeof val === 'number') {
+          if (!Number.isFinite(val)) return '';
+          return val.toLocaleString('fullwide', { useGrouping: false }).replace(/\.0+$/, '').trim();
+        }
+        let str = String(val).trim();
+        // Handle scientific notation strings like "3.01234567890123E+14"
+        if (/^[+-]?\d+(\.\d+)?[eE][+-]?\d+$/.test(str)) {
+          const num = Number(str);
+          if (Number.isFinite(num)) {
+            return num.toLocaleString('fullwide', { useGrouping: false }).replace(/\.0+$/, '');
+          }
+        }
+        return str.replace(/\.0+$/, '').trim();
+      }
+
+      /**
+       * Parse numeric currency field cleanly
+       */
+      function parseNumber(val) {
+        if (val === null || val === undefined || val === '') return 0;
+        if (typeof val === 'number') return Number.isFinite(val) ? val : 0;
+        const cleaned = String(val).replace(/[₹,\s]/g, '').trim();
+        const num = parseFloat(cleaned);
+        return Number.isFinite(num) ? num : 0;
+      }
+
+      /**
+       * Normalize & validate Indian mobile numbers
+       * Detects 10-digit (6-9 start) or 12-digit (91 prefix). Rejects invalid placeholders like 91000.
+       */
+      function normalizeMobile(val) {
+        const rawStr = cleanIdString(val);
+        const digits = rawStr.replace(/\D/g, '');
+        let tenDigit = null;
+
+        if (digits.length === 10 && /^[6-9]\d{9}$/.test(digits)) {
+          tenDigit = digits;
+        } else if (digits.length === 12 && /^91[6-9]\d{9}$/.test(digits)) {
+          tenDigit = digits.slice(2);
+        } else if (digits.length === 11 && /^0[6-9]\d{9}$/.test(digits)) {
+          tenDigit = digits.slice(1);
+        }
+
+        if (!tenDigit) {
+          return { valid: false, raw: '', display: 'Not Available' };
+        }
+        return {
+          valid: true,
+          raw: tenDigit,
+          display: `+91 ${tenDigit.slice(0, 5)} ${tenDigit.slice(5)}`,
+        };
+      }
+
+      /**
+       * Parse Excel serial dates or date strings into ISO YYYY-MM-DD and formatted DD-MMM-YYYY
+       */
+      const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+      function parseDateValue(val) {
+        if (val === null || val === undefined || val === '') {
+          return { display: '—', ts: null };
+        }
+
+        let dateObj = null;
+
+        if (val instanceof Date && !isNaN(val.getTime())) {
+          dateObj = val;
+        } else if (typeof val === 'number' && val > 10000 && val < 90000) {
+          // Excel serial date (epoch 1899-12-30)
+          const utcMs = Math.round((val - 25569) * 86400 * 1000);
+          dateObj = new Date(utcMs);
+        } else {
+          const s = String(val).trim();
+          if (!s) return { display: '—', ts: null };
+
+          // Match DD-MM-YYYY or DD/MM/YYYY
+          const dmy = s.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{2,4})$/);
+          if (dmy) {
+            let year = parseInt(dmy[3], 10);
+            if (year < 100) year += year >= 50 ? 1900 : 2000;
+            dateObj = new Date(Date.UTC(year, parseInt(dmy[2], 10) - 1, parseInt(dmy[1], 10)));
+          } else {
+            const parsed = Date.parse(s);
+            if (!isNaN(parsed)) {
+              dateObj = new Date(parsed);
+            }
+          }
+        }
+
+        if (!dateObj || isNaN(dateObj.getTime())) {
+          return { display: String(val).trim(), ts: null };
+        }
+
+        const day = String(dateObj.getUTCDate()).padStart(2, '0');
+        const mon = MONTHS[dateObj.getUTCMonth()];
+        const yr = dateObj.getUTCFullYear();
+        return {
+          display: `${day}-${mon}-${yr}`,
+          ts: dateObj.getTime(),
+        };
+      }
+
+      /**
+       * Calculate NPA Age (e.g., "1y 8m" or "5m") from timestamp
+       */
+      function calculateNpaAge(ts) {
+        if (!ts) return '—';
+        const now = new Date();
+        const start = new Date(ts);
+        let months = (now.getFullYear() - start.getUTCFullYear()) * 12 + (now.getMonth() - start.getUTCMonth());
+        if (months < 0) return 'New';
+        const years = Math.floor(months / 12);
+        const remMonths = months % 12;
+        if (years === 0 && remMonths === 0) return '< 1m';
+        if (years === 0) return `${remMonths}m`;
+        if (remMonths === 0) return `${years}y`;
+        return `${years}y ${remMonths}m`;
+      }
+
+      /**
+       * Resolve Finacle Sub Asset Class badge metadata
+       */
+      function getAssetClassMeta(rawCode) {
+        const clean = cleanIdString(rawCode);
+        const match = clean.match(/\b(21|31|32|33|40)\b/);
+        const code = match ? match[1] : clean;
+        if (ASSET_CLASS_MAP[code]) return ASSET_CLASS_MAP[code];
+        return {
+          code: code || 'N/A',
+          label: code ? `Class ${code}` : 'Unknown',
+          short: code || 'N/A',
+          badgeClass: 'bg-slate-100 text-slate-700 border border-slate-300',
+        };
+      }
+
+      /**
+       * HTML Escape helper to prevent XSS from untrusted Excel strings
+       */
+      function esc(str) {
+        return String(str ?? '')
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
+      /* =====================================================================
+         5. EXCEL PARSER (EXACT FINACLE NPA SCHEMA SUPPORT)
+         ===================================================================== */
+      function parseExcelWorkbook(arrayBuffer, fileName) {
+        const workbook = XLSX.read(arrayBuffer, { type: 'array', cellDates: false });
+        if (!workbook.SheetNames.length) {
+          throw new Error('The uploaded workbook has no sheets.');
+        }
+
+        // Prefer 'ALL NPA' sheet (case-insensitive), otherwise first sheet
+        const targetSheetName =
+          workbook.SheetNames.find((n) => n.trim().toUpperCase() === 'ALL NPA') ||
+          workbook.SheetNames[0];
+
+        const sheet = workbook.Sheets[targetSheetName];
+        const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '', raw: true });
+
+        if (!rows || rows.length < 2) {
+          throw new Error('No data rows found in the Excel sheet.');
+        }
+
+        // Locate header row (usually row 0, scan first 10 rows for 'ACCT NUMBER' or 'CUST ID')
+        let headerRowIdx = 0;
+        for (let i = 0; i < Math.min(rows.length, 10); i++) {
+          const upperCells = rows[i].map((c) => String(c || '').trim().toUpperCase());
+          if (upperCells.some((c) => c.includes('ACCT NUMBER') || c.includes('CUST ID') || c.includes('ACCT NAME'))) {
+            headerRowIdx = i;
+            break;
+          }
+        }
+
+        const headers = rows[headerRowIdx].map((h) => String(h || '').trim().toUpperCase());
+
+        const findCol = (aliases, fallbackIdx = -1) => {
+          for (const alias of aliases) {
+            const idx = headers.findIndex((h) => h === alias);
+            if (idx !== -1) return idx;
+          }
+          for (const alias of aliases) {
+            const idx = headers.findIndex((h) => h.includes(alias));
+            if (idx !== -1) return idx;
+          }
+          return fallbackIdx;
+        };
+
+        const colIdx = {
+          custId: findCol(['CUST ID', 'CIF ID', 'CIF', 'CUST_ID', 'CUSTOMER ID'], 0),
+          totalAc: findCol(['TOTAL AC', 'TOTAL_AC', 'TOTAL ACCOUNTS'], 1),
+          acctNumber: findCol(['ACCT NUMBER', 'ACCOUNT NUMBER', 'ACCT NO', 'ACCOUNT NO', 'AC NO'], 2),
+          acctName: findCol(['ACCT NAME', 'ACCOUNT NAME', 'BORROWER NAME', 'NAME'], 3),
+          village: findCol(['VILLAGE', 'ADDRESS', 'UNNAMED: 4', '__EMPTY', 'AREA', 'PLACE'], 4),
+          mobile: findCol(['MOBILE NUM', 'MOBILE NO', 'MOBILE', 'PHONE', 'CONTACT'], 5),
+          acctOpnDate: findCol(['ACCT OPN DATE', 'OPEN DATE', 'AC OPN DATE'], 6),
+          sanctLimDate: findCol(['SANCT LIM DATE', 'SANCTION DATE', 'LIMIT DATE'], 7),
+          sanctLimAmt: findCol(['SANCT LIM AMOUNT', 'SANCTION LIMIT', 'SANCT LIM AMT'], 8),
+          drawingPower: findCol(['DRAWING POWER', 'DP'], 9),
+          osBal: findCol(['O/S BAL', 'OS BAL', 'OUTSTANDING', 'O/S BALANCE'], 10),
+          uri: findCol(['URI', 'UNREALIZED INTEREST'], 11),
+          schemeCode: findCol(['SCHEME CODE', 'SCHM CODE', 'SCHEME'], 12),
+          subAssetClass: findCol(['SUB ASSET CLASS', 'ASSET CLASS', 'NPA CLASS', 'IRAC'], 13),
+          classificationDt: findCol(['CLASSIFICATION DT', 'NPA DATE', 'CLASSIFICATION DATE'], 14),
+          osUri: findCol(['OS-URI', 'OS - URI', 'NET OS', 'BOOK BAL'], 15),
+          totalProvision: findCol(['TOTAL PROVISION', 'PROVISION', 'PROV'], 16),
+          compromise: findCol(['COMPROMISE', 'OTS', 'COMPROMISE AMT'], 17),
+        };
+
+        // Ensure column index 4 is mapped for Village if header at index 4 is blank/Unnamed
+        if (colIdx.village === -1 && headers.length > 4) {
+          colIdx.village = 4;
+        }
+
+        const parsedRecords = [];
+
+        for (let r = headerRowIdx + 1; r < rows.length; r++) {
+          const row = rows[r];
+          if (!row || row.length === 0) continue;
+
+          const acctNumber = cleanIdString(row[colIdx.acctNumber]);
+          const custId = cleanIdString(row[colIdx.custId]);
+          const acctName = String(row[colIdx.acctName] || '').trim();
+
+          // Skip blank rows or summary/total footer rows
+          if (!acctNumber && !custId && !acctName) continue;
+          const upperName = acctName.toUpperCase();
+          if (!acctNumber && (upperName === 'TOTAL' || upperName === 'GRAND TOTAL')) continue;
+
+          const villageRaw = colIdx.village >= 0 ? String(row[colIdx.village] || '').trim() : '';
+          const village = villageRaw || 'Not Specified';
+          const mobileObj = normalizeMobile(colIdx.mobile >= 0 ? row[colIdx.mobile] : '');
+          const opnDate = parseDateValue(colIdx.acctOpnDate >= 0 ? row[colIdx.acctOpnDate] : '');
+          const sanctDate = parseDateValue(colIdx.sanctLimDate >= 0 ? row[colIdx.sanctLimDate] : '');
+          const npaDate = parseDateValue(colIdx.classificationDt >= 0 ? row[colIdx.classificationDt] : '');
+          const assetMeta = getAssetClassMeta(colIdx.subAssetClass >= 0 ? row[colIdx.subAssetClass] : '');
+          const schemeCode = String(colIdx.schemeCode >= 0 ? row[colIdx.schemeCode] || '' : '').trim().toUpperCase() || '—';
+
+          parsedRecords.push({
+            id: `${custId}_${acctNumber}_${r}`,
+            custId: custId || 'N/A',
+            totalAcSheet: parseNumber(colIdx.totalAc >= 0 ? row[colIdx.totalAc] : 1) || 1,
+            acctNumber: acctNumber || 'N/A',
+            acctName: acctName || 'Unknown Borrower',
+            village,
+            mobileValid: mobileObj.valid,
+            mobileRaw: mobileObj.raw,
+            mobileDisplay: mobileObj.display,
+            acctOpnDate: opnDate.display,
+            sanctLimDate: sanctDate.display,
+            sanctLimAmt: parseNumber(colIdx.sanctLimAmt >= 0 ? row[colIdx.sanctLimAmt] : 0),
+            drawingPower: parseNumber(colIdx.drawingPower >= 0 ? row[colIdx.drawingPower] : 0),
+            osBal: parseNumber(colIdx.osBal >= 0 ? row[colIdx.osBal] : 0),
+            uri: parseNumber(colIdx.uri >= 0 ? row[colIdx.uri] : 0),
+            schemeCode,
+            subAssetClass: assetMeta.code,
+            classificationDt: npaDate.display,
+            classificationTs: npaDate.ts,
+            osUri: parseNumber(colIdx.osUri >= 0 ? row[colIdx.osUri] : 0),
+            totalProvision: parseNumber(colIdx.totalProvision >= 0 ? row[colIdx.totalProvision] : 0),
+            compromise: parseNumber(colIdx.compromise >= 0 ? row[colIdx.compromise] : 0),
+            // Precomputed lowercase search index for instant mobile filtering
+            _sAcct: (acctNumber || '').toLowerCase(),
+            _sCif: (custId || '').toLowerCase(),
+            _sName: (acctName || '').toLowerCase(),
+            _sVillage: village.toLowerCase(),
+            _sMobile: mobileObj.raw,
+          });
+        }
+
+        if (parsedRecords.length === 0) {
+          throw new Error('No valid NPA account records could be extracted.');
+        }
+
+        return {
+          records: parsedRecords,
+          meta: {
+            fileName,
+            sheetName: targetSheetName,
+            uploadedAt: new Date().toISOString(),
+            recordCount: parsedRecords.length,
+            isDemo: false,
+          },
+        };
+      }
+
+      /* =====================================================================
+         6. DEMO SAMPLE DATASET GENERATOR
+         ===================================================================== */
+      function buildDemoDataset() {
+        const rawSamples = [
+          // Multi-account CIF 1 (3 linked accounts)
+          ['80412951', 3, '304512890014521', 'RAMESH CHANDRA PATIDAR', 'DEPALPUR', '9826045123', '14-Mar-2019', '14-Mar-2019', 250000, 250000, -284650.45, 42150.20, 'CC351', '31', '30-Jun-2024', 242500.25, 60625.06, 175000],
+          ['80412951', 3, '304512890019842', 'RAMESH CHANDRA PATIDAR', 'DEPALPUR', '9826045123', '22-Nov-2020', '22-Nov-2020', 450000, 380000, -412320.00, 58900.00, 'LA755', '31', '30-Jun-2024', 353420.00, 88355.00, 265000],
+          ['80412951', 3, '304512890025109', 'RAMESH CHANDRA PATIDAR', 'DEPALPUR', '9826045123', '05-Aug-2021', '05-Aug-2021', 95000, 95000, -108410.75, 14210.75, 'CC312', '31', '30-Jun-2024', 94200.00, 23550.00, 72000],
+
+          // Multi-account CIF 2 (2 linked accounts)
+          ['80418824', 2, '304512890031104', 'SURESH KUMAR VERMA', 'HATOD', '919425088712', '10-Jan-2020', '10-Jan-2020', 180000, 180000, -214890.50, 31400.50, 'CC351', '32', '31-Mar-2023', 183490.00, 73396.00, 130000],
+          ['80418824', 2, '304512890034908', 'SURESH KUMAR VERMA', 'HATOD', '919425088712', '18-Sep-2021', '18-Sep-2021', 120000, 110000, -124649.03, 18149.03, 'LA762', '32', '31-Mar-2023', 106500.00, 42600.00, 78000],
+
+          // Single Account - Sub-Standard (21)
+          ['80425110', 1, '304512890048215', 'SAVITA BAI CHOUHAN', 'SANWER', '7898123456', '04-Jul-2022', '04-Jul-2022', 150000, 150000, -162450.00, 14850.00, 'CC351', '21', '30-Sep-2025', 147600.00, 22140.00, 118000],
+
+          // Single Account - Doubtful-3 (33) with invalid mobile
+          ['80401933', 1, '304512890007741', 'MUKESH SINGH THAKUR', 'BETMA', '91000', '19-Feb-2017', '19-Feb-2017', 600000, 600000, -785420.80, 198420.80, 'LA755', '33', '31-Dec-2020', 587000.00, 587000.00, 340000],
+
+          // Multi-account CIF 3 (2 linked accounts) - Loss (40)
+          ['80399412', 2, '304512890003118', 'KAMAL KISHORE SHARMA', 'DEPALPUR', '9926511234', '12-May-2016', '12-May-2016', 320000, 320000, -492100.00, 174500.00, 'CC312', '40', '31-Mar-2019', 317600.00, 317600.00, 145000],
+          ['80399412', 2, '304512890005921', 'KAMAL KISHORE SHARMA', 'DEPALPUR', '9926511234', '28-Oct-2017', '28-Oct-2017', 85000, 85000, -119350.00, 36200.00, 'LA762', '40', '31-Mar-2019', 83150.00, 83150.00, 40000],
+
+          // Single Account - Sub-Standard (21)
+          ['80431009', 1, '304512890059301', 'DEVENDRA PATEL', 'GAUTAMPURA', '8871234509', '11-Apr-2023', '11-Apr-2023', 95000, 95000, -101240.00, 7940.00, 'CC351', '21', '31-Dec-2025', 93300.00, 13995.00, 76000],
+
+          // Single Account - Doubtful-1 (31)
+          ['80420771', 1, '304512890041205', 'ANITA DEVI MALVIYA', 'HATOD', '9754098765', '25-Aug-2020', '25-Aug-2020', 210000, 210000, -245800.60, 38900.60, 'LA755', '31', '30-Sep-2024', 206900.00, 51725.00, 155000],
+
+          // Single Account - Doubtful-2 (32)
+          ['80415502', 1, '304512890028844', 'RAJESHWARI AGRO TRADERS', 'SANWER', '9826543210', '03-Dec-2018', '03-Dec-2018', 850000, 850000, -964320.00, 148320.00, 'CC312', '32', '30-Jun-2022', 816000.00, 326400.00, 560000],
+        ];
+
+        const records = rawSamples.map((r, i) => {
+          const mobileObj = normalizeMobile(r[5]);
+          const npaDate = parseDateValue(r[14]);
+          const assetMeta = getAssetClassMeta(r[13]);
+          return {
+            id: `demo_${r[0]}_${r[2]}_${i}`,
+            custId: r[0],
+            totalAcSheet: r[1],
+            acctNumber: r[2],
+            acctName: r[3],
+            village: r[4],
+            mobileValid: mobileObj.valid,
+            mobileRaw: mobileObj.raw,
+            mobileDisplay: mobileObj.display,
+            acctOpnDate: r[6],
+            sanctLimDate: r[7],
+            sanctLimAmt: r[8],
+            drawingPower: r[9],
+            osBal: r[10],
+            uri: r[11],
+            schemeCode: r[12],
+            subAssetClass: assetMeta.code,
+            classificationDt: npaDate.display,
+            classificationTs: npaDate.ts,
+            osUri: r[15],
+            totalProvision: r[16],
+            compromise: r[17],
+            _sAcct: r[2].toLowerCase(),
+            _sCif: r[0].toLowerCase(),
+            _sName: r[3].toLowerCase(),
+            _sVillage: r[4].toLowerCase(),
+            _sMobile: mobileObj.raw,
+          };
+        });
+
+        return {
+          records,
+          meta: {
+            fileName: 'Demo_Branch_NPA_Sample.xlsx',
+            sheetName: 'ALL NPA',
+            uploadedAt: new Date().toISOString(),
+            recordCount: records.length,
+            isDemo: true,
+          },
+        };
+      }
+
+      /* =====================================================================
+         7. DATA INITIALIZATION & CIF INDEXING
+         ===================================================================== */
+      function loadDatasetIntoState(payload) {
+        state.records = payload.records || [];
+        state.meta = payload.meta || null;
+
+        // Build CIF -> Linked Accounts Map for instant 360° lookup
+        state.cifMap = new Map();
+        for (const rec of state.records) {
+          if (!state.cifMap.has(rec.custId)) {
+            state.cifMap.set(rec.custId, []);
+          }
+          state.cifMap.get(rec.custId).push(rec);
+        }
+
+        // Reset search & filters cleanly
+        state.searchQuery = '';
+        state.searchMode = 'all';
+        state.filterVillage = '';
+        state.filterAssetClass = '';
+        state.filterScheme = '';
+        state.sortBy = 'os_desc';
+        state.visibleCount = PAGE_SIZE;
+
+        el.searchInput.value = '';
+        el.btnClearSearch.classList.add('hidden');
+        el.filterAssetClass.value = '';
+        el.sortBy.value = 'os_desc';
+        updateModeChipUI();
+        populateDynamicDropdowns();
+        renderHeaderMeta();
+
+        el.emptyState.classList.add('hidden');
+        el.dashboardWorkspace.classList.remove('hidden');
+        el.btnClearData.classList.remove('hidden');
+
+        applyFiltersAndRender();
+      }
+
+      function populateDynamicDropdowns() {
+        const villageCounts = new Map();
+        const schemeCounts = new Map();
+
+        for (const rec of state.records) {
+          villageCounts.set(rec.village, (villageCounts.get(rec.village) || 0) + 1);
+          schemeCounts.set(rec.schemeCode, (schemeCounts.get(rec.schemeCode) || 0) + 1);
+        }
+
+        const sortedVillages = Array.from(villageCounts.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+        el.filterVillage.innerHTML = `<option value="">All Villages (${sortedVillages.length})</option>` +
+          sortedVillages.map(([v, c]) => `<option value="${esc(v)}">${esc(v)} (${c})</option>`).join('');
+
+        const sortedSchemes = Array.from(schemeCounts.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+        el.filterScheme.innerHTML = `<option value="">All Schemes (${sortedSchemes.length})</option>` +
+          sortedSchemes.map(([s, c]) => `<option value="${esc(s)}">${esc(s)} (${c})</option>`).join('');
+      }
+
+      function renderHeaderMeta() {
+        if (!state.meta) {
+          el.datasetMetaBar.classList.add('hidden');
+          return;
+        }
+        el.datasetMetaBar.classList.remove('hidden');
+        el.metaFileName.textContent = state.meta.fileName;
+        el.metaDemoBadge.classList.toggle('hidden', !state.meta.isDemo);
+        el.metaRecordCount.textContent = `${state.meta.recordCount.toLocaleString('en-IN')} Accounts`;
+
+        const dt = new Date(state.meta.uploadedAt);
+        const dtStr = dt.toLocaleString('en-IN', {
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+        });
+        el.metaUpdatedAt.textContent = `Updated ${dtStr}`;
+      }
+
+      /* =====================================================================
+         8. FILTERING, SORTING & KPI CALCULATION
+         ===================================================================== */
+      function applyFiltersAndRender() {
+        const q = state.searchQuery.trim().toLowerCase();
+        const mode = state.searchMode;
+        const vFilter = state.filterVillage;
+        const aFilter = state.filterAssetClass;
+        const sFilter = state.filterScheme;
+
+        const filtered = state.records.filter((rec) => {
+          if (vFilter && rec.village !== vFilter) return false;
+          if (aFilter && rec.subAssetClass !== aFilter) return false;
+          if (sFilter && rec.schemeCode !== sFilter) return false;
+
+          if (q) {
+            if (mode === 'account') return rec._sAcct.includes(q);
+            if (mode === 'cif') return rec._sCif.includes(q);
+            if (mode === 'name') return rec._sName.includes(q);
+            if (mode === 'village') return rec._sVillage.includes(q);
+            if (mode === 'mobile') return rec._sMobile.includes(q.replace(/\D/g, '') || q);
+            // 'all' omni-search
+            return (
+              rec._sAcct.includes(q) ||
+              rec._sCif.includes(q) ||
+              rec._sName.includes(q) ||
+              rec._sVillage.includes(q) ||
+              rec._sMobile.includes(q)
+            );
+          }
+          return true;
+        });
+
+        // Sort filtered results
+        const sortBy = state.sortBy;
+        filtered.sort((a, b) => {
+          if (sortBy === 'os_desc') {
+            // Finacle debit balances are negative; highest debit exposure first
+            return Math.abs(b.osBal) - Math.abs(a.osBal);
+          }
+          if (sortBy === 'comp_desc') {
+            return b.compromise - a.compromise;
+          }
+          if (sortBy === 'name_asc') {
+            return a.acctName.localeCompare(b.acctName);
+          }
+          if (sortBy === 'village_asc') {
+            return a.village.localeCompare(b.village) || a.acctName.localeCompare(b.acctName);
+          }
+          if (sortBy === 'npa_oldest') {
+            const ta = a.classificationTs ?? Infinity;
+            const tb = b.classificationTs ?? Infinity;
+            return ta - tb;
+          }
+          return 0;
+        });
+
+        state.filtered = filtered;
+        state.visibleCount = PAGE_SIZE;
+
+        updateActiveFilterBadge();
+        renderKPIs(filtered);
+        renderResultsList(true);
+      }
+
+      function updateActiveFilterBadge() {
+        let count = 0;
+        if (state.filterVillage) count++;
+        if (state.filterAssetClass) count++;
+        if (state.filterScheme) count++;
+        if (state.sortBy !== 'os_desc') count++;
+
+        el.activeFilterCount.textContent = count;
+        el.activeFilterCount.classList.toggle('hidden', count === 0);
+      }
+
+      function renderKPIs(list) {
+        const isFiltered =
+          Boolean(state.searchQuery.trim()) ||
+          Boolean(state.filterVillage) ||
+          Boolean(state.filterAssetClass) ||
+          Boolean(state.filterScheme);
+
+        el.kpiScopeBadge.textContent = isFiltered ? 'Filtered View' : 'Entire Branch';
+        el.kpiScopeBadge.className = isFiltered
+          ? 'text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-200'
+          : 'text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-slate-200 text-slate-700';
+
+        const uniqueCifs = new Set();
+        let sumOsBal = 0;
+        let sumOsUri = 0;
+        let sumProvision = 0;
+        let sumCompromise = 0;
+
+        for (const rec of list) {
+          uniqueCifs.add(rec.custId);
+          sumOsBal += rec.osBal;
+          sumOsUri += rec.osUri;
+          sumProvision += rec.totalProvision;
+          sumCompromise += rec.compromise;
+        }
+
+        el.kpiAccounts.textContent = list.length.toLocaleString('en-IN');
+        el.kpiCifs.textContent = uniqueCifs.size.toLocaleString('en-IN');
+
+        el.kpiOsBal.textContent = formatCompactINR(sumOsBal);
+        el.kpiOsBalFull.textContent = formatOsBal(sumOsBal, true);
+
+        el.kpiOsUri.textContent = formatCompactINR(sumOsUri);
+        el.kpiOsUriFull.textContent = formatINR(sumOsUri, true);
+
+        el.kpiProvision.textContent = formatCompactINR(sumProvision);
+        el.kpiProvisionFull.textContent = formatINR(sumProvision, true);
+
+        el.kpiCompromise.textContent = formatCompactINR(sumCompromise);
+        el.kpiCompromiseFull.textContent = formatINR(sumCompromise, true);
+      }
+
+      /* =====================================================================
+         9. FAST PAGINATED RESULT CARD RENDERER (50 AT A TIME)
+         ===================================================================== */
+      function renderResultsList(reset = true) {
+        const total = state.filtered.length;
+
+        if (total === 0) {
+          el.resultsContainer.innerHTML = '';
+          el.noResultsState.classList.remove('hidden');
+          el.loadMoreWrapper.classList.add('hidden');
+          el.resultsCountText.textContent = '0 matching accounts';
+          return;
+        }
+
+        el.noResultsState.classList.add('hidden');
+        const sliceEnd = Math.min(state.visibleCount, total);
+        const startIdx = reset ? 0 : Math.max(0, sliceEnd - PAGE_SIZE);
+        const batch = state.filtered.slice(startIdx, sliceEnd);
+
+        const html = batch.map((rec) => buildAccountCardHTML(rec)).join('');
+        if (reset) {
+          el.resultsContainer.innerHTML = html;
+        } else {
+          el.resultsContainer.insertAdjacentHTML('beforeend', html);
+        }
+
+        el.resultsCountText.textContent = `Showing ${sliceEnd.toLocaleString('en-IN')} of ${total.toLocaleString('en-IN')} accounts`;
+
+        const remaining = total - sliceEnd;
+        if (remaining > 0) {
+          el.loadMoreWrapper.classList.remove('hidden');
+          el.loadMoreRemaining.textContent = `(${remaining.toLocaleString('en-IN')} remaining)`;
+        } else {
+          el.loadMoreWrapper.classList.add('hidden');
+        }
+      }
+
+      function buildAccountCardHTML(rec) {
+        const assetMeta = getAssetClassMeta(rec.subAssetClass);
+        const linkedCount = (state.cifMap.get(rec.custId) || []).length;
+        const multiCifBadge = linkedCount > 1
+          ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-200 text-[10px] font-bold shrink-0">
+               ${linkedCount} A/Cs in CIF
+             </span>`
+          : '';
+
+        const osColor = rec.osBal < 0 ? 'text-rose-700' : 'text-emerald-700';
+
+        return `
+          <article
+            data-record-id="${esc(rec.id)}"
+            role="button"
+            tabindex="0"
+            class="account-card group bg-white hover:bg-slate-50/70 active:scale-[0.995] rounded-2xl border border-slate-200 hover:border-blue-400 shadow-xs hover:shadow-md transition p-3.5 sm:p-4 cursor-pointer flex flex-col justify-between gap-3"
+          >
+            <!-- Top Row: Name & Asset Class -->
+            <div>
+              <div class="flex items-start justify-between gap-2">
+                <h3 class="text-sm font-bold text-navy-900 group-hover:text-blue-700 leading-snug line-clamp-2">
+                  ${esc(rec.acctName)}
+                </h3>
+                <span class="px-2 py-0.5 rounded-md text-[10px] font-bold shrink-0 ${assetMeta.badgeClass}">
+                  ${esc(assetMeta.short)}
+                </span>
+              </div>
+
+              <!-- Meta Pills -->
+              <div class="flex flex-wrap items-center gap-1.5 mt-2">
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 text-[11px] font-medium">
+                  <svg class="w-3 h-3 text-slate-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  ${esc(rec.village)}
+                </span>
+                <span class="px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-100 text-[10px] font-bold">
+                  ${esc(rec.schemeCode)}
+                </span>
+                ${multiCifBadge}
+              </div>
+
+              <!-- Account & CIF Numbers -->
+              <div class="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-slate-500 font-mono">
+                <span><strong class="font-sans text-slate-400 font-medium">A/C:</strong> <span class="text-slate-800 font-semibold">${esc(rec.acctNumber)}</span></span>
+                <span><strong class="font-sans text-slate-400 font-medium">CIF:</strong> <span class="text-indigo-700 font-semibold">${esc(rec.custId)}</span></span>
+              </div>
+            </div>
+
+            <!-- Financial Strip -->
+            <div class="pt-2.5 border-t border-slate-100 grid grid-cols-3 gap-2">
+              <div>
+                <div class="text-[10px] font-medium text-slate-400 uppercase">O/S Bal</div>
+                <div class="text-xs sm:text-[13px] font-extrabold tabular-nums ${osColor} mt-0.5 truncate">
+                  ${esc(formatOsBal(rec.osBal, true))}
+                </div>
+              </div>
+              <div>
+                <div class="text-[10px] font-medium text-slate-400 uppercase">OS-URI</div>
+                <div class="text-xs sm:text-[13px] font-bold tabular-nums text-navy-900 mt-0.5 truncate">
+                  ${esc(formatINR(rec.osUri, false))}
+                </div>
+              </div>
+              <div class="text-right">
+                <div class="text-[10px] font-medium text-slate-400 uppercase">Compromise</div>
+                <div class="text-xs sm:text-[13px] font-bold tabular-nums text-emerald-700 mt-0.5 truncate">
+                  ${esc(formatINR(rec.compromise, false))}
+                </div>
+              </div>
+            </div>
+          </article>
+        `;
+      }
+
+      /* =====================================================================
+         10. ACCOUNT & CIF 360° DETAIL MODAL
+         ===================================================================== */
+      function openAccountModal(record) {
+        state.activeRecord = record;
+        const assetMeta = getAssetClassMeta(record.subAssetClass);
+        const linkedAccounts = state.cifMap.get(record.custId) || [record];
+
+        // Header Info
+        el.modalBorrowerName.textContent = record.acctName;
+        el.modalAssetBadge.className = `px-2.5 py-0.5 rounded-md text-[11px] font-bold ${assetMeta.badgeClass}`;
+        el.modalAssetBadge.textContent = `${assetMeta.code} • ${assetMeta.label}`;
+        el.modalVillage.textContent = `📍 ${record.village}`;
+        el.modalScheme.textContent = record.schemeCode;
+        el.modalAcctNo.textContent = record.acctNumber;
+        el.modalCifId.textContent = record.custId;
+
+        // Direct Call & WhatsApp Buttons
+        if (record.mobileValid) {
+          const waText = encodeURIComponent(`Namaste ${record.acctName}, regarding your bank account ${record.acctNumber}.`);
+          el.modalContactActions.innerHTML = `
+            <a
+              href="tel:+91${esc(record.mobileRaw)}"
+              class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-xs transition"
+            >
+              <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
+              </svg>
+              Call
+            </a>
+            <a
+              href="https://wa.me/91${esc(record.mobileRaw)}?text=${waText}"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-xs transition"
+            >
+              <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.006c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.086-.177.18-.076.354.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86s.274.072.376-.043c.101-.116.433-.506.549-.68.116-.173.231-.145.39-.087s1.011.477 1.184.564c.173.087.289.129.332.202.043.073.043.423-.101.827z" />
+              </svg>
+              WhatsApp
+            </a>
+          `;
+        } else {
+          el.modalContactActions.innerHTML = `
+            <span class="inline-flex items-center px-2.5 py-1.5 rounded-lg bg-slate-100 text-slate-400 text-xs font-medium">
+              Mobile Not Available
+            </span>
+          `;
+        }
+
+        // Section 1: CIF 360° Consolidated Exposure
+        let cifSanctLim = 0;
+        let cifOsBal = 0;
+        let cifUri = 0;
+        let cifOsUri = 0;
+        let cifProvision = 0;
+        let cifCompromise = 0;
+
+        for (const acc of linkedAccounts) {
+          cifSanctLim += acc.sanctLimAmt;
+          cifOsBal += acc.osBal;
+          cifUri += acc.uri;
+          cifOsUri += acc.osUri;
+          cifProvision += acc.totalProvision;
+          cifCompromise += acc.compromise;
+        }
+
+        el.cif360IdLabel.textContent = record.custId;
+        el.cif360CountBadge.textContent = `${linkedAccounts.length} Linked ${linkedAccounts.length === 1 ? 'A/C' : 'A/Cs'}`;
+        el.cif360OsBal.textContent = formatOsBal(cifOsBal, true);
+        el.cif360OsUri.textContent = formatINR(cifOsUri, true);
+        el.cif360Compromise.textContent = formatINR(cifCompromise, true);
+        el.cif360SanctLim.textContent = formatINR(cifSanctLim, false);
+        el.cif360Uri.textContent = formatINR(cifUri, true);
+        el.cif360Provision.textContent = formatINR(cifProvision, true);
+
+        // Section 2: Selected Account Full Details
+        const makeDetailItem = (label, value, valueClass = 'text-navy-900') => `
+          <div class="bg-slate-50 rounded-xl p-2.5 border border-slate-100">
+            <div class="text-[10px] font-semibold uppercase tracking-wide text-slate-400">${esc(label)}</div>
+            <div class="text-xs sm:text-sm font-bold tabular-nums mt-0.5 break-words ${valueClass}">${esc(value)}</div>
+          </div>
+        `;
+
+        el.detailFinancialGrid.innerHTML = [
+          makeDetailItem('O/S Balance', formatOsBal(record.osBal, true), record.osBal < 0 ? 'text-rose-700' : 'text-emerald-700'),
+          makeDetailItem('OS-URI (Net Book Bal)', formatINR(record.osUri, true), 'text-navy-900'),
+          makeDetailItem('Unrealized Interest (URI)', formatINR(record.uri, true), 'text-amber-700'),
+          makeDetailItem('Sanctioned Limit', formatINR(record.sanctLimAmt, false), 'text-slate-800'),
+          makeDetailItem('Drawing Power', formatINR(record.drawingPower, false), 'text-slate-800'),
+          makeDetailItem('Total Provision', formatINR(record.totalProvision, true), 'text-slate-800'),
+          makeDetailItem('Compromise / OTS', formatINR(record.compromise, true), 'text-emerald-700'),
+        ].join('');
+
+        el.detailFacilityGrid.innerHTML = [
+          makeDetailItem('Account Number', record.acctNumber, 'font-mono text-navy-900'),
+          makeDetailItem('CIF / CUST ID', record.custId, 'font-mono text-indigo-700'),
+          makeDetailItem('Scheme Code', record.schemeCode, 'text-blue-700'),
+          makeDetailItem('A/C Open Date', record.acctOpnDate),
+          makeDetailItem('Sanction Limit Date', record.sanctLimDate),
+          makeDetailItem('Mobile Number', record.mobileDisplay, record.mobileValid ? 'text-navy-900' : 'text-slate-400'),
+          makeDetailItem('Village / Address', record.village),
+          makeDetailItem('Total A/Cs (Sheet / Found)', `${record.totalAcSheet} / ${linkedAccounts.length}`),
+        ].join('');
+
+        el.detailNpaGrid.innerHTML = [
+          makeDetailItem('Sub Asset Class', `${assetMeta.code} — ${assetMeta.label}`),
+          makeDetailItem('NPA Classification Date', record.classificationDt),
+          makeDetailItem('NPA Age', calculateNpaAge(record.classificationTs), 'text-rose-700'),
+        ].join('');
+
+        // Section 3: Linked Accounts under Same CIF
+        el.linkedAccountsList.innerHTML = linkedAccounts
+          .map((acc) => {
+            const isCurrent = acc.id === record.id;
+            const accAsset = getAssetClassMeta(acc.subAssetClass);
+            return `
+              <div
+                data-linked-id="${esc(acc.id)}"
+                role="button"
+                tabindex="0"
+                class="linked-acct-item rounded-xl p-3 border transition cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-2 ${
+                  isCurrent
+                    ? 'bg-blue-50/80 border-blue-400 ring-1 ring-blue-300'
+                    : 'bg-white border-slate-200 hover:border-blue-300 hover:bg-slate-50'
+                }"
+              >
+                <div class="min-w-0">
+                  <div class="flex items-center flex-wrap gap-1.5">
+                    <span class="font-mono text-xs font-bold text-navy-900">${esc(acc.acctNumber)}</span>
+                    <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700">${esc(acc.schemeCode)}</span>
+                    <span class="px-1.5 py-0.5 rounded text-[10px] font-bold ${accAsset.badgeClass}">${esc(accAsset.short)}</span>
+                    ${isCurrent ? '<span class="px-1.5 py-0.5 rounded bg-blue-600 text-white text-[10px] font-bold">VIEWING</span>' : ''}
+                  </div>
+                  <div class="text-[11px] text-slate-500 mt-1 truncate">
+                    ${esc(acc.acctName)} • NPA: ${esc(acc.classificationDt)}
+                  </div>
+                </div>
+                <div class="flex items-center sm:flex-col sm:items-end justify-between gap-2 shrink-0 border-t sm:border-t-0 pt-2 sm:pt-0 border-slate-100">
+                  <div class="text-xs font-extrabold tabular-nums ${acc.osBal < 0 ? 'text-rose-700' : 'text-emerald-700'}">
+                    O/S: ${esc(formatOsBal(acc.osBal, true))}
+                  </div>
+                  <div class="text-[11px] font-semibold tabular-nums text-emerald-700">
+                    OTS: ${esc(formatINR(acc.compromise, false))}
+                  </div>
+                </div>
+              </div>
+            `;
+          })
+          .join('');
+
+        // Show Modal & Scroll to Top
+        el.detailModal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+        el.modalBodyScroll.scrollTop = 0;
+      }
+
+      function closeAccountModal() {
+        el.detailModal.classList.add('hidden');
+        document.body.style.overflow = '';
+        state.activeRecord = null;
+      }
+
+      /* =====================================================================
+         11. CLIPBOARD COPY (IFRAME-SAFE document.execCommand('copy'))
+         ===================================================================== */
+      function copyTextToClipboard(text, successMsg = 'Copied to clipboard') {
+        try {
+          const textarea = document.createElement('textarea');
+          textarea.value = text;
+          textarea.setAttribute('readonly', '');
+          textarea.style.position = 'fixed';
+          textarea.style.top = '-9999px';
+          textarea.style.left = '-9999px';
+          document.body.appendChild(textarea);
+          textarea.select();
+          textarea.setSelectionRange(0, textarea.value.length);
+          const ok = document.execCommand('copy');
+          document.body.removeChild(textarea);
+
+          if (ok) {
+            showToast(successMsg);
+          } else {
+            showToast('Copy failed. Please copy manually.');
+          }
+        } catch (err) {
+          showToast('Copy failed. Please copy manually.');
+        }
+      }
+
+      function buildWhatsAppRecoverySummary(record) {
+        const linked = state.cifMap.get(record.custId) || [record];
+        const sumOs = linked.reduce((s, a) => s + a.osBal, 0);
+        const sumOsUri = linked.reduce((s, a) => s + a.osUri, 0);
+        const sumComp = linked.reduce((s, a) => s + a.compromise, 0);
+        const sumProv = linked.reduce((s, a) => s + a.totalProvision, 0);
+
+        const lines = [
+          `*NPA RECOVERY BRIEF — CIF 360°*`,
+          `────────────────────────`,
+          `*Borrower:* ${record.acctName}`,
+          `*Village:* ${record.village}`,
+          `*CIF ID:* ${record.custId}`,
+          `*Mobile:* ${record.mobileDisplay}`,
+          ``,
+          `*CIF CONSOLIDATED EXPOSURE (${linked.length} A/Cs)*`,
+          `• Total O/S Bal: ${formatOsBal(sumOs, true)}`,
+          `• Total OS-URI: ${formatINR(sumOsUri, true)}`,
+          `• Total Provision: ${formatINR(sumProv, true)}`,
+          `• Total Compromise (OTS): ${formatINR(sumComp, true)}`,
+          ``,
+          `*LINKED ACCOUNTS DETAIL*`,
+        ];
+
+        linked.forEach((acc, idx) => {
+          const am = getAssetClassMeta(acc.subAssetClass);
+          lines.push(
+            `${idx + 1}. A/C: ${acc.acctNumber} (${acc.schemeCode} | ${am.code}-${am.label})`,
+            `   O/S: ${formatOsBal(acc.osBal, true)} | OS-URI: ${formatINR(acc.osUri, false)} | OTS: ${formatINR(acc.compromise, false)}`,
+            `   NPA Dt: ${acc.classificationDt} (${calculateNpaAge(acc.classificationTs)})`
+          );
+        });
+
+        return lines.join('\n');
+      }
+
+      /* =====================================================================
+         12. UI HELPERS (TOAST, LOADING, SEARCH MODE CHIPS)
+         ===================================================================== */
+      let toastTimer = null;
+      function showToast(msg) {
+        el.toastMessage.textContent = msg;
+        el.toast.classList.remove('opacity-0', 'translate-y-2');
+        el.toast.classList.add('opacity-100', 'translate-y-0');
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => {
+          el.toast.classList.add('opacity-0', 'translate-y-2');
+          el.toast.classList.remove('opacity-100', 'translate-y-0');
+        }, 2400);
+      }
+
+      function setLoading(show, title = 'Parsing Excel File...') {
+        el.loadingTitle.textContent = title;
+        el.loadingOverlay.classList.toggle('hidden', !show);
+      }
+
+      function updateModeChipUI() {
+        const placeholders = {
+          all: 'Search Account No, CIF ID, Name, Village, or Mobile...',
+          account: 'Enter Account Number (e.g. 30451289...)...',
+          cif: 'Enter CIF / CUST ID...',
+          name: 'Enter Borrower Name...',
+          village: 'Enter Village Name...',
+          mobile: 'Enter 10-digit Mobile Number...',
+        };
+        el.searchInput.placeholder = placeholders[state.searchMode] || placeholders.all;
+
+        document.querySelectorAll('.mode-chip').forEach((btn) => {
+          const isActive = btn.dataset.mode === state.searchMode;
+          btn.className = isActive
+            ? 'mode-chip px-3 py-1.5 rounded-lg text-xs font-semibold transition shrink-0 cursor-pointer bg-navy-900 text-white shadow-xs'
+            : 'mode-chip px-3 py-1.5 rounded-lg text-xs font-semibold transition shrink-0 cursor-pointer bg-slate-100 text-slate-600 hover:bg-slate-200';
+        });
+      }
+
+      /* =====================================================================
+         13. FILE IMPORT HANDLER
+         ===================================================================== */
+      async function handleExcelFile(file) {
+        if (!file) return;
+        setLoading(true, `Reading ${file.name}...`);
+
+        try {
+          const buffer = await file.arrayBuffer();
+          // Yield to UI thread so spinner renders cleanly
+          await new Promise((r) => setTimeout(r, 40));
+
+          const payload = parseExcelWorkbook(buffer, file.name);
+          setLoading(true, 'Saving locally to IndexedDB...');
+          await saveToIndexedDB(payload);
+
+          loadDatasetIntoState(payload);
+          showToast(`Imported ${payload.records.length.toLocaleString('en-IN')} NPA accounts`);
+        } catch (err) {
+          console.error('Excel import error:', err);
+          showToast(`Import Error: ${err.message || 'Invalid Excel format'}`);
+        } finally {
+          setLoading(false);
+          el.fileInput.value = '';
+        }
+      }
+
+      /* =====================================================================
+         14. EVENT LISTENERS
+         ===================================================================== */
+      function bindEvents() {
+        // Upload triggers
+        const triggerUpload = () => el.fileInput.click();
+        el.btnImportExcel.addEventListener('click', triggerUpload);
+        el.btnEmptyUpload.addEventListener('click', triggerUpload);
+        el.fileInput.addEventListener('change', (e) => {
+          if (e.target.files && e.target.files[0]) {
+            handleExcelFile(e.target.files[0]);
+          }
+        });
+
+        // Drag & Drop on Empty State
+        ['dragenter', 'dragover'].forEach((evt) => {
+          el.dropZone.addEventListener(evt, (e) => {
+            e.preventDefault();
+            el.dropZone.classList.add('border-blue-500', 'bg-blue-50/40');
+          });
+        });
+        ['dragleave', 'drop'].forEach((evt) => {
+          el.dropZone.addEventListener(evt, (e) => {
+            e.preventDefault();
+            el.dropZone.classList.remove('border-blue-500', 'bg-blue-50/40');
+          });
+        });
+        el.dropZone.addEventListener('drop', (e) => {
+          const file = e.dataTransfer?.files?.[0];
+          if (file) handleExcelFile(file);
+        });
+
+        // Demo Data trigger
+        const loadDemo = async () => {
+          const payload = buildDemoDataset();
+          try {
+            await saveToIndexedDB(payload);
+          } catch (e) {
+            console.warn('IndexedDB unavailable:', e);
+          }
+          loadDatasetIntoState(payload);
+          showToast('Loaded Demo Branch NPA Sample');
+        };
+        el.btnLoadDemo.addEventListener('click', loadDemo);
+        el.btnEmptyDemo.addEventListener('click', loadDemo);
+
+        // Clear Data confirmation modal
+        el.btnClearData.addEventListener('click', () => el.confirmModal.classList.remove('hidden'));
+        el.btnCancelClear.addEventListener('click', () => el.confirmModal.classList.add('hidden'));
+        el.confirmModal.addEventListener('click', (e) => {
+          if (e.target === el.confirmModal) el.confirmModal.classList.add('hidden');
+        });
+        el.btnConfirmClear.addEventListener('click', async () => {
+          el.confirmModal.classList.add('hidden');
+          try {
+            await clearIndexedDB();
+          } catch (e) {
+            console.warn(e);
+          }
+          state.records = [];
+          state.cifMap = new Map();
+          state.meta = null;
+          state.filtered = [];
+          el.dashboardWorkspace.classList.add('hidden');
+          el.datasetMetaBar.classList.add('hidden');
+          el.btnClearData.classList.add('hidden');
+          el.emptyState.classList.remove('hidden');
+          showToast('Local NPA data cleared');
+        });
+
+        // Debounced Omni-Search
+        let searchTimer = null;
+        el.searchInput.addEventListener('input', (e) => {
+          const val = e.target.value;
+          el.btnClearSearch.classList.toggle('hidden', !val);
+          clearTimeout(searchTimer);
+          searchTimer = setTimeout(() => {
+            state.searchQuery = val;
+            applyFiltersAndRender();
+          }, 140);
+        });
+
+        el.btnClearSearch.addEventListener('click', () => {
+          el.searchInput.value = '';
+          el.btnClearSearch.classList.add('hidden');
+          state.searchQuery = '';
+          applyFiltersAndRender();
+          el.searchInput.focus();
+        });
+
+        // Search Mode Chips
+        el.searchModeChips.addEventListener('click', (e) => {
+          const btn = e.target.closest('.mode-chip');
+          if (!btn) return;
+          state.searchMode = btn.dataset.mode;
+          updateModeChipUI();
+          applyFiltersAndRender();
+        });
+
+        // Filter Panel Toggle
+        el.btnToggleFilters.addEventListener('click', () => {
+          el.filterPanel.classList.toggle('hidden');
+        });
+
+        // Filter Dropdowns & Sort
+        el.filterVillage.addEventListener('change', (e) => {
+          state.filterVillage = e.target.value;
+          applyFiltersAndRender();
+        });
+        el.filterAssetClass.addEventListener('change', (e) => {
+          state.filterAssetClass = e.target.value;
+          applyFiltersAndRender();
+        });
+        el.filterScheme.addEventListener('change', (e) => {
+          state.filterScheme = e.target.value;
+          applyFiltersAndRender();
+        });
+        el.sortBy.addEventListener('change', (e) => {
+          state.sortBy = e.target.value;
+          applyFiltersAndRender();
+        });
+
+        const resetAllFilters = () => {
+          state.searchQuery = '';
+          state.searchMode = 'all';
+          state.filterVillage = '';
+          state.filterAssetClass = '';
+          state.filterScheme = '';
+          state.sortBy = 'os_desc';
+
+          el.searchInput.value = '';
+          el.btnClearSearch.classList.add('hidden');
+          el.filterVillage.value = '';
+          el.filterAssetClass.value = '';
+          el.filterScheme.value = '';
+          el.sortBy.value = 'os_desc';
+          updateModeChipUI();
+          applyFiltersAndRender();
+        };
+        el.btnResetFilters.addEventListener('click', resetAllFilters);
+        el.btnNoResultsReset.addEventListener('click', resetAllFilters);
+
+        // Load More Pagination
+        el.btnLoadMore.addEventListener('click', () => {
+          state.visibleCount += PAGE_SIZE;
+          renderResultsList(false);
+        });
+
+        // Result Card Click Delegation
+        el.resultsContainer.addEventListener('click', (e) => {
+          const card = e.target.closest('.account-card');
+          if (!card) return;
+          const id = card.dataset.recordId;
+          const rec = state.records.find((r) => r.id === id);
+          if (rec) openAccountModal(rec);
+        });
+
+        // Linked Sibling Account Click inside Modal
+        el.linkedAccountsList.addEventListener('click', (e) => {
+          const item = e.target.closest('.linked-acct-item');
+          if (!item) return;
+          const id = item.dataset.linkedId;
+          const rec = state.records.find((r) => r.id === id);
+          if (rec) openAccountModal(rec);
+        });
+
+        // Modal Close & ESC Key
+        el.btnCloseModal.addEventListener('click', closeAccountModal);
+        el.detailModal.addEventListener('click', (e) => {
+          if (e.target === el.detailModal) closeAccountModal();
+        });
+        document.addEventListener('keydown', (e) => {
+          if (e.key === 'Escape') {
+            if (!el.detailModal.classList.contains('hidden')) closeAccountModal();
+            if (!el.confirmModal.classList.contains('hidden')) el.confirmModal.classList.add('hidden');
+          }
+        });
+
+        // 1-Tap Copy Buttons inside Modal
+        el.btnCopyAcct.addEventListener('click', () => {
+          if (state.activeRecord) {
+            copyTextToClipboard(state.activeRecord.acctNumber, `Copied A/C: ${state.activeRecord.acctNumber}`);
+          }
+        });
+        el.btnCopyCif.addEventListener('click', () => {
+          if (state.activeRecord) {
+            copyTextToClipboard(state.activeRecord.custId, `Copied CIF: ${state.activeRecord.custId}`);
+          }
+        });
+        el.btnCopySummary.addEventListener('click', () => {
+          if (state.activeRecord) {
+            const summary = buildWhatsAppRecoverySummary(state.activeRecord);
+            copyTextToClipboard(summary, 'Recovery Summary copied for WhatsApp!');
+          }
+        });
+      }
+
+      /* =====================================================================
+         15. BOOTSTRAP ON LOAD
+         ===================================================================== */
+      async function init() {
+        bindEvents();
+        try {
+          const saved = await loadFromIndexedDB();
+          if (saved && Array.isArray(saved.records) && saved.records.length > 0) {
+            loadDatasetIntoState(saved);
+          }
+        } catch (err) {
+          console.warn('Could not read IndexedDB on startup:', err);
+        }
+      }
+
+      window.addEventListener('DOMContentLoaded', init);
+    })();
+  </script>
+</body>
+</html>
